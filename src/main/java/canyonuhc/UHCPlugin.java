@@ -99,8 +99,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.setHealth(20);
                 player.getInventory().clear();
-                int x = rand.nextInt(-1000, 1001);
-                int z = rand.nextInt(-1000, 1001);
+                int x = rand.nextInt(-2000, 2001);
+                int z = rand.nextInt(-2000, 2001);
                 world.loadChunk(x >> 4, z >> 4, true);
                 player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
             }
@@ -263,14 +263,16 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public void killPlayer(Player player) {
-        player.getWorld().spawn(player.getLocation(), LightningStrike.class);
-        broadcastMessage(player.getName() + " is out!");
-        packetManager.broadcastPacket("spectator", player.getName());
+        if (spectatingPlayers.add(player.getName())) {
+            player.getWorld().spawn(player.getLocation(), LightningStrike.class);
+            broadcastMessage(player.getName() + " is out!");
+        }
         initPlayerDead(player);
     }
 
     public void initPlayerDead(Player player) {
         if (!uhcStarted) return;
+        packetManager.broadcastPacket("spectator", player.getName());
         player.setDisplayName(player.getDisplayName() + " " + ChatColor.RED + "[DEAD]\u00a7r");
         player.setSleepingIgnored(true);
         player.setPlayerTime(0, false);

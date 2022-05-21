@@ -43,7 +43,7 @@ public class UHCEntityListener extends EntityListener {
     public void onEntityDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
         Player player = (Player)event.getEntity();
-        if (plugin.uhcStarted && plugin.spectatingPlayers.add(player.getName())) {
+        if (plugin.uhcStarted) {
             plugin.killPlayer(player);
         }
     }

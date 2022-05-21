@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
@@ -54,6 +55,7 @@ public class UHCPlayerListener extends PlayerListener {
         }
         if (plugin.uhcStarted) {
             plugin.initPlayerDead(event.getPlayer());
+            plugin.spectatingPlayers.add(event.getPlayer().getName());
         }
         awaitingPingResponse.add(event.getPlayer().getName());
         plugin.packetManager.sendPacket(event.getPlayer(), "ping");
@@ -95,6 +97,13 @@ public class UHCPlayerListener extends PlayerListener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (plugin.uhcStarted) {
             plugin.handOutMaps(event.getPlayer());
+        }
+    }
+
+    @Override
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        if (plugin.spectatingPlayers.contains(event.getPlayer().getName())) {
+            event.setCancelled(true);
         }
     }
 }
