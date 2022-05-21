@@ -1,0 +1,13 @@
+name: Canyon-UHC
+version: 0.1.0
+main: canyonuhc.UHCPlugin
+commands:
+  reset-uhc:
+    description: Resets the UHC, killing all players
+    usage: /reset-uhc
+  start-uhc:
+    description: Starts the UHC
+    usage: /start-uhc
+  worldborder:
+    description: Sets or gets the world border
+    usage: /worldborder [distance] [ticks]

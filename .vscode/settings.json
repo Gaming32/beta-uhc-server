@@ -1,0 +1,6 @@
+{
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "yaml.schemas": {
+        "https://json.schemastore.org/bukkit-plugin.json": "file:///c%3A/Users/josia/OneDrive/Documents/canyon-uhc/src/main/resources/plugin.yml"
+    }
+}

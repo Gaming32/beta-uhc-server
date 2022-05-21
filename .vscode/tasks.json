@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Prepare server",
+            "type": "shell",
+            "command": "mvnd verify; copy target/canyon-uhc-1.0-SNAPSHOT.jar test/plugins",
+        },
+        {
+            "label": "Launch server",
+            "type": "shell",
+            "command": "cd test; ./run",
+            "dependsOn": "Prepare server"
+        }
+    ]
+}
