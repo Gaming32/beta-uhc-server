@@ -58,22 +58,24 @@ public class UHCPlayerListener extends PlayerListener {
             plugin.spectatingPlayers.add(event.getPlayer().getName());
         }
         awaitingPingResponse.add(event.getPlayer().getName());
-        plugin.packetManager.sendPacket(event.getPlayer(), "ping");
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-            if (awaitingPingResponse.contains(event.getPlayer().getName())) {
-                event.getPlayer().sendMessage(
-                    ChatColor.RED + "WARNING: You do not have the UHC client mod installed. You may run into issues."
-                );
-                awaitingPingResponse.remove(event.getPlayer().getName());
-                plugin.packetManager.getDoesntHaveMod().add(event.getPlayer().getName());
+            plugin.packetManager.sendPacket(event.getPlayer(), "ping");
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                if (awaitingPingResponse.contains(event.getPlayer().getName())) {
+                    event.getPlayer().sendMessage(
+                        ChatColor.RED + "WARNING: You do not have the UHC client mod installed. You may run into issues."
+                    );
+                    awaitingPingResponse.remove(event.getPlayer().getName());
+                    // plugin.packetManager.getDoesntHaveMod().add(event.getPlayer().getName());
+                }
+            }, 60);
+            // Sync spectators
+            plugin.packetManager.sendPacket(event.getPlayer(), "reset-spectators");
+            plugin.worldBorderInit(event.getPlayer());
+            for (String spectator : plugin.spectatingPlayers) {
+                plugin.packetManager.sendPacket(event.getPlayer(), "spectator", spectator);
             }
         }, 20);
-        // Sync spectators
-        plugin.packetManager.sendPacket(event.getPlayer(), "reset-spectators");
-        plugin.worldBorderInit(event.getPlayer());
-        for (String spectator : plugin.spectatingPlayers) {
-            plugin.packetManager.sendPacket(event.getPlayer(), "spectator", spectator);
-        }
     }
 
     @Override
