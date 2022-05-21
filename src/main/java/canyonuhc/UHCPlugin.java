@@ -60,7 +60,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Event.Priority.Normal, this);
 
         getCommand("reset-uhc").setExecutor((sender, command, label, args) -> {
             if (!sender.isOp()) {
@@ -281,7 +283,13 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public void handOutMaps(Player player) {
         player.getInventory().clear();
-        for (MapView map : playerFaceMaps.values()) {
+        for (Map.Entry<String, MapView> playerMap : playerFaceMaps.entrySet()) {
+            String playerName = playerMap.getKey();
+            MapView map = playerMap.getValue();
+            packetManager.sendPacket(
+                player, "mapplayer",
+                Integer.toHexString(map.getId()) + ' ' + playerName
+            );
             player.getInventory().addItem(new ItemStack(Material.MAP, 1, map.getId()));
         }
     }
