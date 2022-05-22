@@ -10,7 +10,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -76,15 +75,6 @@ public class UHCPlayerListener extends PlayerListener {
                 plugin.packetManager.sendPacket(event.getPlayer(), "spectator", spectator);
             }
         }, 20);
-    }
-
-    @Override
-    public void onPlayerKick(PlayerKickEvent event) {
-        if (event.getReason().equals("Flying is not enabled on this server")) {
-            // Total hack, but w/e
-            event.getPlayer().setFallDistance(0);
-            event.setCancelled(true);
-        }
     }
 
     @Override

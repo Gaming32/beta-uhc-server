@@ -29,6 +29,12 @@ public class UHCEntityListener extends EntityListener {
         }
         if (!(event.getEntity() instanceof Player)) return;
         Player player = (Player)event.getEntity();
+        plugin.lastDamageCauses.put(player.getName(), event.getCause());
+        if (event instanceof EntityDamageByEntityEvent) {
+            plugin.lastAttackers.put(player.getName(), ((EntityDamageByEntityEvent)event).getDamager());
+        } else {
+            plugin.lastAttackers.remove(player.getName());
+        }
         if (event.getCause() == DamageCause.SUICIDE && !player.isOp()) {
             player.sendRawMessage("Cannot /kill yourself in a UHC!");
             event.setCancelled(true);
@@ -43,6 +49,7 @@ public class UHCEntityListener extends EntityListener {
     public void onEntityDeath(EntityDeathEvent event) {
         if (!(event.getEntity() instanceof Player)) return;
         Player player = (Player)event.getEntity();
+        UHCPlugin.broadcastMessage(plugin.getDeathMessage(player));
         if (plugin.uhcStarted) {
             plugin.killPlayer(player);
         }

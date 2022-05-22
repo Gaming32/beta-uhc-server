@@ -1,8 +1,14 @@
 package canyonuhc;
 
+import java.io.IOError;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
@@ -12,10 +18,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LightningStrike;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +33,24 @@ import canyonuhc.util.MutableDouble;
 
 public class UHCPlugin extends JavaPlugin implements Listener {
     public static final Logger LOGGER = Logger.getLogger("Canyon-UHC");
+    public static final Map<DamageCause, String> DEATH_MESSAGES;
+
+    static {
+        Map<DamageCause, String> deathMessages = new EnumMap<>(DamageCause.class);
+        Properties deathMessageTranslations = new Properties();
+        try (InputStream is = UHCPlugin.class.getResourceAsStream("/deathMessages.properties")) {
+            deathMessageTranslations.load(is);
+        } catch (IOException e) {
+            throw new IOError(e);
+        }
+        for (DamageCause damageCause : DamageCause.values()) {
+            deathMessages.put(
+                damageCause,
+                deathMessageTranslations.getProperty(damageCause.toString(), damageCause.toString())
+            );
+        }
+        DEATH_MESSAGES = Collections.unmodifiableMap(deathMessages);
+    }
 
     public CustomPacketManager packetManager;
     public UHCBlockListener blockListener;
@@ -32,14 +58,18 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     public UHCPlayerListener playerListener;
     public boolean uhcStarted = false;
     public Set<String> spectatingPlayers;
-    public Map<String, MapView> playerFaceMaps = new HashMap<>();
-    public Map<Short, String> faceMapIdToPlayer = new HashMap<>();
-    private Map<String, Location> lastPlayerPos = new HashMap<>();
-    private Map<String, MutableDouble> accumulatedBorderDamage = new HashMap<>();
+    public final Map<String, MapView> playerFaceMaps = new HashMap<>();
+    public final Map<Short, String> faceMapIdToPlayer = new HashMap<>();
+    public final Map<String, DamageCause> lastDamageCauses = new HashMap<>();
+    public final Map<String, Entity> lastAttackers = new HashMap<>();
+    private final Map<String, Location> lastPlayerPos = new HashMap<>();
+    private final Map<String, MutableDouble> accumulatedBorderDamage = new HashMap<>();
     private double worldBorderPos = 200;
     private double worldBorderInterpDest = worldBorderPos;
-    private int worldBorderInterpRemaining = 0;
+    private long worldBorderInterpRemaining = 0;
     private int worldBorderTask = -1;
+    private UHCRunner currentUhc;
+    int currentUhcTask = -1;
 
     @Override
     public void onEnable() {
@@ -59,7 +89,6 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_INTERACT, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Normal, this);
-        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Event.Priority.Normal, this);
@@ -70,10 +99,17 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 return true;
             }
             uhcStarted = false;
+            currentUhc = null;
+            if (currentUhcTask != -1) {
+                Bukkit.getScheduler().cancelTask(currentUhcTask);
+                currentUhcTask = -1;
+            }
+            setPvp(true);
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.setDisplayName(player.getName());
                 player.setSleepingIgnored(false);
                 player.resetPlayerTime();
+                lastDamageCauses.put(player.getName(), DamageCause.CUSTOM);
                 player.setHealth(0);
             }
             spectatingPlayers.clear();
@@ -92,7 +128,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 return true;
             }
             spectatingPlayers.clear();
-            setWorldBorder(2000);
+            setWorldBorder(6128);
+            setPvp(false);
             packetManager.broadcastPacket("reset-spectators");
             ThreadLocalRandom rand = ThreadLocalRandom.current();
             World world = Bukkit.getWorld("world");
@@ -107,6 +144,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
             }
             uhcStarted = true;
+            (currentUhc = new UHCRunner(this)).beginUhc();
             return true;
         });
 
@@ -178,6 +216,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                                 accumulatedDamage.addValue((distanceFromBorder - 5) * 0.2);
                                 if (accumulatedDamage.getValue() > 1) {
                                     int intDamage = (int)accumulatedDamage.getValue();
+                                    lastDamageCauses.put(player.getName(), DamageCause.SUFFOCATION);
                                     player.damage(intDamage);
                                     accumulatedDamage.addValue(-intDamage);
                                 }
@@ -217,7 +256,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 player,
                 "worldborderinterp",
                 CustomPacketManager.doubleToString(worldBorderInterpDest) + ' ' +
-                Integer.toHexString(worldBorderInterpRemaining)
+                Long.toHexString(worldBorderInterpRemaining)
             );
         }
     }
@@ -230,7 +269,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         packetManager.broadcastPacket(
             "worldborderinterp",
             CustomPacketManager.doubleToString(worldBorderInterpDest) + ' ' +
-            Integer.toHexString(worldBorderInterpRemaining)
+            Long.toHexString(worldBorderInterpRemaining)
         );
     }
 
@@ -239,7 +278,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         packetManager.broadcastPacket("worldborder", CustomPacketManager.doubleToString(distance));
     }
 
-    public void setWorldBorder(double distance, int ticks) {
+    public void setWorldBorder(double distance, long ticks) {
         if (worldBorderTask != -1) {
             Bukkit.getScheduler().cancelTask(worldBorderTask);
             worldBorderTask = -1;
@@ -260,14 +299,25 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 setWorldBorder(distance);
                 Bukkit.getScheduler().cancelTask(worldBorderTask);
                 worldBorderTask = -1;
+                if (currentUhc != null) {
+                    currentUhc.worldBorderFinishedShrinking();
+                }
             }
         }, 0, 1);
     }
 
+    public String getDeathMessage(Player player) {
+        DamageCause cause = lastDamageCauses.get(player.getName());
+        if (cause == null) {
+            cause = DamageCause.CUSTOM; // I wish I could just do ?? or ?:
+        }
+        return String.format(DEATH_MESSAGES.get(cause), player.getDisplayName(), lastAttackers.get(player.getName()));
+    }
+
     public void killPlayer(Player player) {
         if (spectatingPlayers.add(player.getName())) {
+            player.getWorld().strikeLightningEffect(player.getLocation());
             player.getWorld().spawn(player.getLocation(), LightningStrike.class);
-            broadcastMessage(player.getName() + " is out!");
         }
         initPlayerDead(player);
     }
@@ -310,8 +360,18 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public static void broadcastMessage(String message) {
+        LOGGER.info(message);
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(message);
+        }
+    }
+
+    /**
+     * Set the PvP toggle for all worlds
+     */
+    public static void setPvp(boolean pvp) {
+        for (World world : Bukkit.getWorlds()) {
+            world.setPVP(pvp);
         }
     }
 }
