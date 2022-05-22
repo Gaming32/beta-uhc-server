@@ -311,7 +311,11 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         if (cause == null) {
             cause = DamageCause.CUSTOM; // I wish I could just do ?? or ?:
         }
-        return String.format(DEATH_MESSAGES.get(cause), player.getDisplayName(), lastAttackers.get(player.getName()));
+        return String.format(
+            DEATH_MESSAGES.get(cause),
+            player.getDisplayName(),
+            getEntityName(lastAttackers.get(player.getName()))
+        );
     }
 
     public void killPlayer(Player player) {
@@ -357,6 +361,20 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+    }
+
+    public static String getEntityName(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity instanceof Player) {
+            return ((Player)entity).getName();
+        }
+        String name = entity.getClass().getSimpleName();
+        if (name.startsWith("Craft")) {
+            return name.substring(5);
+        }
+        return name;
     }
 
     public static void broadcastMessage(String message) {
