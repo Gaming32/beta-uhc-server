@@ -52,10 +52,6 @@ public class UHCPlayerListener extends PlayerListener {
         if (!plugin.playerFaceMaps.containsKey(event.getPlayer().getName())) {
             plugin.generateFaceMap(event.getPlayer());
         }
-        if (plugin.uhcStarted) {
-            plugin.initPlayerDead(event.getPlayer());
-            plugin.spectatingPlayers.add(event.getPlayer().getName());
-        }
         awaitingPingResponse.add(event.getPlayer().getName());
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             plugin.packetManager.sendPacket(event.getPlayer(), "ping");
