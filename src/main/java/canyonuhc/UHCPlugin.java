@@ -40,6 +40,7 @@ import canyonuhc.packets.CustomPacketManager;
 import canyonuhc.util.MutableDouble;
 
 public class UHCPlugin extends JavaPlugin implements Listener {
+    public static final boolean TEST_MODE = Boolean.getBoolean("canyonuhc.testMode");
     public static final Logger LOGGER = Logger.getLogger("Canyon-UHC");
     public static final Map<DamageCause, String> DEATH_MESSAGES;
 
@@ -82,6 +83,10 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        if (TEST_MODE) {
+            LOGGER.info("UHC test mode active. All times will be quartered.");
+        }
+
         spectatingPlayers = new HashSet<>();
 
         packetManager = new CustomPacketManager();

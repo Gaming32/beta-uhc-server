@@ -139,6 +139,11 @@ public final class UHCRunner {
                 "Grace Period will end in 10 minutes, " +
                 "once the grace period is over PvP will be enabled and world border will start moving"
             );
+            if (UHCPlugin.TEST_MODE) {
+                player.sendMessage(ChatColor.GOLD +
+                    "UHC test mode active. All times will be quartered."
+                );
+            }
             player.playEffect(
                 player.getLocation(),
                 Effect.CLICK2,
@@ -146,7 +151,7 @@ public final class UHCRunner {
             );
         }
 
-        int[] remainingGracePeriodAndTaskId = {10, -1};
+        int[] remainingGracePeriodAndTaskId = {UHCPlugin.TEST_MODE ? 4 : 10, -1};
         activeTasks.add(
             remainingGracePeriodAndTaskId[1] = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 remainingGracePeriodAndTaskId[0] -= 2;

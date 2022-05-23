@@ -1,5 +1,7 @@
 package canyonuhc.uhc;
 
+import canyonuhc.UHCPlugin;
+
 public enum WorldBorderStage {
     FIRST(6128, 3064, 1800),
     SECOND(3064, 1532),
@@ -15,6 +17,11 @@ public enum WorldBorderStage {
     private final long time;
 
     WorldBorderStage(long startSize, long endSize, long time) {
+        if (UHCPlugin.TEST_MODE) {
+            startSize /= 4;
+            endSize /= 4;
+            time /= 4;
+        }
         this.startSize = startSize;
         this.endSize = endSize;
         this.time = time;
