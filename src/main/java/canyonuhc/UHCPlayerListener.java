@@ -76,7 +76,6 @@ public class UHCPlayerListener extends PlayerListener {
     @Override
     public void onPlayerQuit(PlayerQuitEvent event) {
         if (plugin.uhcStarted) {
-            plugin.killPlayer(event.getPlayer());
             plugin.currentUhc.checkUhcEnd();
         }
         plugin.packetManager.getDoesntHaveMod().remove(event.getPlayer().getName());
