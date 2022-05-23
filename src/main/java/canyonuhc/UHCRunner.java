@@ -173,7 +173,7 @@ public final class UHCRunner {
                     );
                 }
             }
-        }, 2 * 60 * 20, 2 * 60 * 60);
+        }, 2 * 60 * 20, 2 * 60 * 20);
     }
 
     private void startWorldBorders() {

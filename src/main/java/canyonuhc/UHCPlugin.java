@@ -262,7 +262,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             player.setDisplayName(player.getName());
             player.setSleepingIgnored(false);
             player.resetPlayerTime();
-            lastDamageCauses.put(player.getName(), DamageCause.CUSTOM);
+            // lastDamageCauses.put(player.getName(), DamageCause.CUSTOM);
             player.getInventory().clear();
             player.setHealth(20);
             player.teleport(Bukkit.getWorld("world").getSpawnLocation());
