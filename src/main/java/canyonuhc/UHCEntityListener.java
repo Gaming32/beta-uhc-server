@@ -1,9 +1,12 @@
 package canyonuhc;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -35,13 +38,9 @@ public class UHCEntityListener extends EntityListener {
         } else {
             plugin.lastAttackers.remove(player.getName());
         }
-        if (event.getCause() == DamageCause.SUICIDE && !player.isOp()) {
-            player.sendRawMessage("Cannot /kill yourself in a UHC!");
-            event.setCancelled(true);
-            return;
-        }
         if (plugin.spectatingPlayers.contains(player.getName())) {
             event.setCancelled(true);
+            return;
         }
     }
 
@@ -52,6 +51,31 @@ public class UHCEntityListener extends EntityListener {
         UHCPlugin.broadcastMessage(plugin.getDeathMessage(player));
         if (plugin.uhcStarted) {
             plugin.killPlayer(player);
+            if (plugin.currentUhc.teamGame) {
+                // TODO: implement team games
+            } else {
+                Player theAlive = null;
+                for (Player player2 : Bukkit.getOnlinePlayers()) {
+                    if (!plugin.spectatingPlayers.contains(player2.getName())) {
+                        if (theAlive == null) {
+                            theAlive = player2;
+                        } else {
+                            theAlive = null;
+                            break;
+                        }
+                    }
+                }
+                if (theAlive != null) {
+                    Location spawnLocation = Bukkit.getWorld("world").getSpawnLocation();
+                    for (Player player2 : Bukkit.getOnlinePlayers()) {
+                        player2.sendMessage(ChatColor.GOLD.toString() +
+                            theAlive.getName() + " won the UHC!"
+                        );
+                        player2.playEffect(spawnLocation, Effect.RECORD_PLAY, 0); // 0 = win sound
+                    }
+                    plugin.endUhc();
+                }
+            }
         }
     }
 
