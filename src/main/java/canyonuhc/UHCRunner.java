@@ -1,8 +1,14 @@
 package canyonuhc;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 
@@ -62,6 +68,61 @@ public final class UHCRunner {
             );
         }
         moveWorldBorders(currentStage.getEndSize(), currentStage.getTime(size));
+    }
+
+    public void checkUhcEnd() {
+        List<Player> alive = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (!plugin.spectatingPlayers.contains(player.getName())) {
+                alive.add(player);
+            }
+        }
+        String winner = null;
+        boolean ended = false;
+        if (plugin.currentUhc.teamGame) {
+            // Keep track of the teams with at least one player alive
+            Set<String> aliveTeams = new HashSet<>();
+            for (Player player : alive) {
+                String teamName = plugin.getTeamName(player.getName());
+                aliveTeams.add(teamName != null ? teamName : player.getName());
+            }
+            if (aliveTeams.size() < 2) {
+                ended = true;
+                if (aliveTeams.size() == 1) {
+                    winner = aliveTeams.iterator().next();
+                }
+            }
+        } else {
+            if (alive.size() < 2) {
+                ended = true;
+                if (alive.size() == 1) {
+                    winner = alive.get(0).getName();
+                }
+            }
+        }
+        if (ended) {
+            if (winner != null) {
+                Location spawnLocation = Bukkit.getWorld("world").getSpawnLocation();
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    player.sendMessage(ChatColor.GOLD.toString() +
+                        winner + " won the UHC!"
+                    );
+                    player.playEffect(spawnLocation, Effect.RECORD_PLAY, 0); // 0 = win sound
+                }
+            } else {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    player.sendMessage(ChatColor.GOLD +
+                        "The UHC ended because all living players logged off."
+                    );
+                    player.playEffect(
+                        player.getLocation(),
+                        Effect.EXTINGUISH,
+                        0 // data is unused for EXTINGUISH, according to wiki.vg
+                    );
+                }
+            }
+            plugin.endUhc();
+        }
     }
 
     public void beginUhc() {

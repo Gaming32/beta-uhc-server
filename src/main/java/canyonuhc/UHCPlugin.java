@@ -1,17 +1,24 @@
 package canyonuhc;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -63,6 +70,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     public final Map<Short, String> faceMapIdToPlayer = new HashMap<>();
     public final Map<String, DamageCause> lastDamageCauses = new HashMap<>();
     public final Map<String, Entity> lastAttackers = new HashMap<>();
+    private final Map<String, Set<String>> teamNameToMembers = new HashMap<>();
+    private final Map<String, String> memberToTeamName = new HashMap<>();
     private final Map<String, Location> lastPlayerPos = new HashMap<>();
     private final Map<String, MutableDouble> accumulatedBorderDamage = new HashMap<>();
     private double worldBorderPos = 200;
@@ -112,7 +121,18 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("A UHC is already running! Run /reset-uhc to reset it.");
                 return true;
             }
-            boolean isTeamGame = args.length > 1 && Boolean.parseBoolean(args[1]);
+            boolean isTeamGame = args.length > 0 && Boolean.parseBoolean(args[0]);
+            Map<String, Location> teamOrigins = null;
+            if (isTeamGame) {
+                try {
+                    loadTeams();
+                } catch (IOException e) {
+                    sender.sendMessage(ChatColor.RED + "Failed to load teams: " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                    return true;
+                }
+                teamOrigins = new HashMap<>();
+            }
             spectatingPlayers.clear();
             setWorldBorder(6128);
             setPvp(false);
@@ -124,16 +144,19 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.setHealth(20);
                 player.getInventory().clear();
-                int x, z;
-                if (isTeamGame) {
-                    // TODO: implement team games
-                    x = z = 0;
+                String teamName;
+                if (isTeamGame && (teamName = getTeamName(player.getName())) != null) {
+                    Location teamOrigin = teamOrigins.get(teamName);
+                    if (teamOrigin == null) {
+                        teamOrigins.put(teamName, teamOrigin = getRandomTeamPlayerLocation(world, rand));
+                    }
+                    int x = teamOrigin.getBlockX() + rand.nextInt(-10, 11);
+                    int z = teamOrigin.getBlockZ() + rand.nextInt(-10, 11);
+                    world.loadChunk(x >> 4, z >> 4, true);
+                    player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
                 } else {
-                    x = rand.nextInt(-2000, 2001);
-                    z = rand.nextInt(-2000, 2001);
+                    player.teleport(getRandomTeamPlayerLocation(world, rand));
                 }
-                world.loadChunk(x >> 4, z >> 4, true);
-                player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
             }
             uhcStarted = true;
             (currentUhc = new UHCRunner(this, isTeamGame)).beginUhc();
@@ -320,6 +343,36 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 }
             }
         }, 0, 1);
+    }
+
+    private void loadTeams() throws IOException {
+        teamNameToMembers.clear();
+        memberToTeamName.clear();
+        try (Reader reader = new FileReader(new File(getDataFolder(), "teams.json"))) {
+            teamNameToMembers.putAll(
+                new Gson().fromJson(reader, new TypeToken<Map<String, Set<String>>>() {}.getType())
+            );
+        }
+        for (Map.Entry<String, Set<String>> team : teamNameToMembers.entrySet()) {
+            for (String member : team.getValue()) {
+                memberToTeamName.put(member, team.getKey());
+            }
+        }
+    }
+
+    public Set<String> getTeamMembers(String teamName) {
+        return teamNameToMembers.get(teamName);
+    }
+
+    public String getTeamName(String memberName) {
+        return memberToTeamName.get(memberName);
+    }
+
+    private Location getRandomTeamPlayerLocation(World world, Random rand) {
+        int x = rand.nextInt(-2000, 2001);
+        int z = rand.nextInt(-2000, 2001);
+        world.loadChunk(x >> 4, z >> 4, true);
+        return new Location(world, x, world.getHighestBlockYAt(x, z), z);
     }
 
     public String getDeathMessage(Player player) {
