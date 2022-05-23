@@ -125,6 +125,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("A UHC is already running! Run /reset-uhc to reset it.");
                 return true;
             }
+            endUhc(); // Ensure everything's cleaned up
             boolean isTeamGame = args.length > 0 && Boolean.parseBoolean(args[0]);
             Map<String, Location> teamOrigins = null;
             if (isTeamGame) {
@@ -137,10 +138,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 }
                 teamOrigins = new HashMap<>();
             }
-            spectatingPlayers.clear();
             setWorldBorder(WorldBorderStage.FIRST.getStartSize());
             setPvp(false);
-            packetManager.broadcastPacket("reset-spectators");
             ThreadLocalRandom rand = ThreadLocalRandom.current();
             World world = Bukkit.getWorld("world");
             world.setTime(0);
@@ -149,8 +148,10 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 player.setHealth(20);
                 player.getInventory().clear();
                 player.getInventory().setArmorContents(new ItemStack[4]);
+                player.setNoDamageTicks(200);
                 String teamName;
-                if (isTeamGame && (teamName = getTeamName(player.getName())) != null) {
+                if (isTeamGame && (teamName = getTeamName(player)) != null) {
+                    player.setDisplayName("[" + teamName + "] " + player.getName());
                     Location teamOrigin = teamOrigins.get(teamName);
                     if (teamOrigin == null) {
                         teamOrigins.put(teamName, teamOrigin = getRandomTeamPlayerLocation(world, rand));
@@ -366,6 +367,10 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public Set<String> getTeamMembers(String teamName) {
         return teamNameToMembers.get(teamName);
+    }
+
+    public String getTeamName(Player member) {
+        return memberToTeamName.get(member.getName());
     }
 
     public String getTeamName(String memberName) {

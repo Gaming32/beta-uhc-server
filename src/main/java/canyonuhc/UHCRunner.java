@@ -84,7 +84,7 @@ public final class UHCRunner {
             // Keep track of the teams with at least one player alive
             Set<String> aliveTeams = new HashSet<>();
             for (Player player : alive) {
-                String teamName = plugin.getTeamName(player.getName());
+                String teamName = plugin.getTeamName(player);
                 aliveTeams.add(teamName != null ? teamName : player.getName());
             }
             if (aliveTeams.size() < 2) {
@@ -158,8 +158,10 @@ public final class UHCRunner {
                 if (remainingGracePeriodAndTaskId[0] == 0) {
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         player.sendMessage(ChatColor.GOLD +
-                            "Grace Period is now over, PVP is enabled and world border has started! Good Luck!"
+                            "Grace Period is now over, PvP is enabled and the world border has started! Good Luck! " +
+                            "We have also healed you to full health for preparation for this dangerous time."
                         );
+                        player.setHealth(20);
                         player.playEffect(
                             player.getLocation(),
                             Effect.BOW_FIRE,

@@ -30,7 +30,15 @@ public class UHCEntityListener extends EntityListener {
         Player player = (Player)event.getEntity();
         plugin.lastDamageCauses.put(player.getName(), event.getCause());
         if (event instanceof EntityDamageByEntityEvent) {
-            plugin.lastAttackers.put(player.getName(), ((EntityDamageByEntityEvent)event).getDamager());
+            EntityDamageByEntityEvent event2 = (EntityDamageByEntityEvent)event;
+            if (event2.getDamager() instanceof Player && plugin.currentUhc != null && plugin.currentUhc.teamGame) {
+                Player damager = (Player)event2.getDamager();
+                if (plugin.getTeamName(player).equals(plugin.getTeamName(damager))) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+            plugin.lastAttackers.put(player.getName(), event2.getDamager());
         } else {
             plugin.lastAttackers.remove(player.getName());
         }
