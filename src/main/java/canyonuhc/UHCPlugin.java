@@ -22,7 +22,6 @@ import com.google.gson.reflect.TypeToken;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -37,6 +36,7 @@ import org.bukkit.map.MapView;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import canyonuhc.packets.CustomPacketManager;
+import canyonuhc.uhc.WorldBorderStage;
 import canyonuhc.util.MutableDouble;
 
 public class UHCPlugin extends JavaPlugin implements Listener {
@@ -138,7 +138,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 teamOrigins = new HashMap<>();
             }
             spectatingPlayers.clear();
-            setWorldBorder(6128);
+            setWorldBorder(WorldBorderStage.FIRST.getStartSize());
             setPvp(false);
             packetManager.broadcastPacket("reset-spectators");
             ThreadLocalRandom rand = ThreadLocalRandom.current();
@@ -168,10 +168,10 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         });
 
         getCommand("worldborder").setExecutor((sender, command, label, args) -> {
-            if (sender instanceof Player) {
-                Player player = (Player)sender;
-                player.playEffect(player.getLocation(), Effect.RECORD_PLAY, 0); // 0 = win sound
-            }
+            // if (sender instanceof Player) {
+            //     Player player = (Player)sender;
+            //     player.playEffect(player.getLocation(), Effect.RECORD_PLAY, 0); // 0 = win sound
+            // }
             if (args.length == 0) {
                 sender.sendMessage("The current world border is from -" + worldBorderPos + " to " + worldBorderPos);
             } else if (!sender.isOp()) {
@@ -316,6 +316,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public void setWorldBorder(double distance) {
+        Bukkit.getScheduler().cancelTask(worldBorderTask);
+        worldBorderTask = -1;
         worldBorderPos = distance;
         packetManager.broadcastPacket("worldborder", CustomPacketManager.doubleToString(distance));
     }
@@ -339,8 +341,6 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 }
             } else {
                 setWorldBorder(distance);
-                Bukkit.getScheduler().cancelTask(worldBorderTask);
-                worldBorderTask = -1;
                 if (currentUhc != null) {
                     currentUhc.worldBorderFinishedShrinking();
                 }
@@ -372,8 +372,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     private Location getRandomTeamPlayerLocation(World world, Random rand) {
-        int x = rand.nextInt(-2000, 2001);
-        int z = rand.nextInt(-2000, 2001);
+        int bound = TEST_MODE ? 1500 : 2000;
+        int x = rand.nextInt(-bound, bound + 1);
+        int z = rand.nextInt(-bound, bound + 1);
         world.loadChunk(x >> 4, z >> 4, true);
         return new Location(world, x, world.getHighestBlockYAt(x, z), z);
     }
