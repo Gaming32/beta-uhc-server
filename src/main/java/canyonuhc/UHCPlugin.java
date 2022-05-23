@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -68,7 +69,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     private double worldBorderInterpDest = worldBorderPos;
     private long worldBorderInterpRemaining = 0;
     private int worldBorderTask = -1;
-    private UHCRunner currentUhc;
+    public UHCRunner currentUhc;
     int currentUhcTask = -1;
 
     @Override
@@ -98,23 +99,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage(ChatColor.RED + "Only ops may run this command");
                 return true;
             }
-            uhcStarted = false;
-            currentUhc = null;
-            if (currentUhcTask != -1) {
-                Bukkit.getScheduler().cancelTask(currentUhcTask);
-                currentUhcTask = -1;
-            }
-            setPvp(true);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.setDisplayName(player.getName());
-                player.setSleepingIgnored(false);
-                player.resetPlayerTime();
-                lastDamageCauses.put(player.getName(), DamageCause.CUSTOM);
-                player.setHealth(0);
-            }
-            spectatingPlayers.clear();
-            packetManager.broadcastPacket("reset-spectators");
-            setWorldBorder(200);
+            endUhc();
             return true;
         });
 
@@ -127,6 +112,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("A UHC is already running! Run /reset-uhc to reset it.");
                 return true;
             }
+            boolean isTeamGame = args.length > 1 && Boolean.parseBoolean(args[1]);
             spectatingPlayers.clear();
             setWorldBorder(6128);
             setPvp(false);
@@ -138,23 +124,31 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.setHealth(20);
                 player.getInventory().clear();
-                int x = rand.nextInt(-2000, 2001);
-                int z = rand.nextInt(-2000, 2001);
+                int x, z;
+                if (isTeamGame) {
+                    // TODO: implement team games
+                    x = z = 0;
+                } else {
+                    x = rand.nextInt(-2000, 2001);
+                    z = rand.nextInt(-2000, 2001);
+                }
                 world.loadChunk(x >> 4, z >> 4, true);
                 player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
             }
             uhcStarted = true;
-            (currentUhc = new UHCRunner(this)).beginUhc();
+            (currentUhc = new UHCRunner(this, isTeamGame)).beginUhc();
             return true;
         });
 
         getCommand("worldborder").setExecutor((sender, command, label, args) -> {
-            if (!sender.isOp()) {
-                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
-                return true;
+            if (sender instanceof Player) {
+                Player player = (Player)sender;
+                player.playEffect(player.getLocation(), Effect.RECORD_PLAY, 0); // 0 = win sound
             }
             if (args.length == 0) {
                 sender.sendMessage("The current world border is from -" + worldBorderPos + " to " + worldBorderPos);
+            } else if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
             } else {
                 double distance;
                 try {
@@ -231,6 +225,28 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         }, 0, 20);
 
         LOGGER.info("Enabled Canyon-UHC");
+    }
+
+    public void endUhc() {
+        uhcStarted = false;
+        currentUhc = null;
+        if (currentUhcTask != -1) {
+            Bukkit.getScheduler().cancelTask(currentUhcTask);
+            currentUhcTask = -1;
+        }
+        setPvp(true);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setDisplayName(player.getName());
+            player.setSleepingIgnored(false);
+            player.resetPlayerTime();
+            lastDamageCauses.put(player.getName(), DamageCause.CUSTOM);
+            player.getInventory().clear();
+            player.setHealth(20);
+            player.teleport(Bukkit.getWorld("world").getSpawnLocation());
+        }
+        spectatingPlayers.clear();
+        packetManager.broadcastPacket("reset-spectators");
+        setWorldBorder(200);
     }
 
     public boolean isInsideWorldBorder(Location pos) {

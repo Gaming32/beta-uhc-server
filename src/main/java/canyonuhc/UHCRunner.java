@@ -10,10 +10,13 @@ import canyonuhc.uhc.WorldBorderStage;
 
 public final class UHCRunner {
     private final UHCPlugin plugin;
+    public final boolean teamGame;
+
     private WorldBorderStage currentStage = WorldBorderStage.FIRST;
 
-    public UHCRunner(UHCPlugin plugin) {
+    public UHCRunner(UHCPlugin plugin, boolean teamGame) {
         this.plugin = plugin;
+        this.teamGame = teamGame;
     }
 
     public void worldBorderFinishedShrinking() {

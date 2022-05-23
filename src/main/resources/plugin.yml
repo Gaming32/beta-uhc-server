@@ -7,7 +7,7 @@ commands:
     usage: /reset-uhc
   start-uhc:
     description: Starts the UHC
-    usage: /start-uhc
+    usage: /start-uhc [team-game]
   worldborder:
     description: Sets or gets the world border
     usage: /worldborder [distance] [ticks]
