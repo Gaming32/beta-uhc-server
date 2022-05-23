@@ -79,7 +79,6 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     private long worldBorderInterpRemaining = 0;
     private int worldBorderTask = -1;
     public UHCRunner currentUhc;
-    int currentUhcTask = -1;
 
     @Override
     public void onEnable() {
@@ -252,10 +251,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public void endUhc() {
         uhcStarted = false;
-        currentUhc = null;
-        if (currentUhcTask != -1) {
-            Bukkit.getScheduler().cancelTask(currentUhcTask);
-            currentUhcTask = -1;
+        if (currentUhc != null) {
+            currentUhc.cancelTasks();
+            currentUhc = null;
         }
         setPvp(true);
         for (Player player : Bukkit.getOnlinePlayers()) {

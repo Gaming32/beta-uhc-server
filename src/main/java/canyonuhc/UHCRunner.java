@@ -16,6 +16,7 @@ import canyonuhc.uhc.WorldBorderStage;
 
 public final class UHCRunner {
     private final UHCPlugin plugin;
+    private final Set<Integer> activeTasks = new HashSet<>(1);
     public final boolean teamGame;
 
     private WorldBorderStage currentStage = WorldBorderStage.FIRST;
@@ -38,14 +39,14 @@ public final class UHCRunner {
                     );
                 }
             }
-            plugin.currentUhcTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            activeTasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (!player.getWorld().getName().equals("world")) {
                         plugin.lastDamageCauses.put(player.getName(), DamageCause.FIRE);
                         player.setHealth(0);
                     }
                 }
-            }, 5 * 60 * 20, 100);
+            }, 5 * 60 * 20, 100));
             return;
         } else if (currentStage == WorldBorderStage.SIX) {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -145,35 +146,38 @@ public final class UHCRunner {
             );
         }
 
-        int[] remainingGracePeriod = {10};
-        plugin.currentUhcTask = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            remainingGracePeriod[0] -= 2;
-            if (remainingGracePeriod[0] == 0) {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.sendMessage(ChatColor.GOLD +
-                        "Grace Period is now over, PVP is enabled and world border has started! Good Luck!"
-                    );
-                    player.playEffect(
-                        player.getLocation(),
-                        Effect.BOW_FIRE,
-                        0 // data is unused for BOW_FIRE, according to wiki.vg
-                    );
+        int[] remainingGracePeriodAndTaskId = {10, -1};
+        activeTasks.add(
+            remainingGracePeriodAndTaskId[1] = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+                remainingGracePeriodAndTaskId[0] -= 2;
+                if (remainingGracePeriodAndTaskId[0] == 0) {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        player.sendMessage(ChatColor.GOLD +
+                            "Grace Period is now over, PVP is enabled and world border has started! Good Luck!"
+                        );
+                        player.playEffect(
+                            player.getLocation(),
+                            Effect.BOW_FIRE,
+                            0 // data is unused for BOW_FIRE, according to wiki.vg
+                        );
+                    }
+                    Bukkit.getScheduler().cancelTask(remainingGracePeriodAndTaskId[1]);
+                    activeTasks.remove(remainingGracePeriodAndTaskId[1]);
+                    endGracePeriod.run();
+                } else {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        player.sendMessage(ChatColor.GOLD +
+                            "Grace Period will end in " + remainingGracePeriodAndTaskId[0] + " minutes"
+                        );
+                        player.playEffect(
+                            player.getLocation(),
+                            Effect.CLICK2,
+                            0 // data is unused for CLICK1, according to wiki.vg
+                        );
+                    }
                 }
-                Bukkit.getScheduler().cancelTask(plugin.currentUhcTask);
-                endGracePeriod.run();
-            } else {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.sendMessage(ChatColor.GOLD +
-                        "Grace Period will end in " + remainingGracePeriod[0] + " minutes"
-                    );
-                    player.playEffect(
-                        player.getLocation(),
-                        Effect.CLICK2,
-                        0 // data is unused for CLICK1, according to wiki.vg
-                    );
-                }
-            }
-        }, 2 * 60 * 20, 2 * 60 * 20);
+            }, 2 * 60 * 20, 2 * 60 * 20)
+        );
     }
 
     private void startWorldBorders() {
@@ -195,5 +199,12 @@ public final class UHCRunner {
         } else {
             plugin.setWorldBorder(newSize, time * 20);
         }
+    }
+
+    void cancelTasks() {
+        for (int task : activeTasks) {
+            Bukkit.getScheduler().cancelTask(task);
+        }
+        activeTasks.clear();
     }
 }
