@@ -13,10 +13,10 @@ jobs:
           repository: canyonmodded/canyon
           submodules: recursive
           path: canyon
-      - name: Setup github.ref
+      - name: Setup Git
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "actions-user"
+          git config --global user.email "action@github.com"
+          git config --global user.name "actions-user"
       - name: Install Canyon
         run: |
           cd canyon
