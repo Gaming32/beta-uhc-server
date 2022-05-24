@@ -73,6 +73,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     public final Map<String, Entity> lastAttackers = new HashMap<>();
     private final Map<String, Set<String>> teamNameToMembers = new HashMap<>();
     private final Map<String, String> memberToTeamName = new HashMap<>();
+    public final Map<String, Integer> globalGlowingEffects = new HashMap<>();
     private final Map<String, Location> lastPlayerPos = new HashMap<>();
     private final Map<String, MutableDouble> accumulatedBorderDamage = new HashMap<>();
     private double worldBorderPos = 200;
@@ -202,6 +203,45 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                         " over a time of " + (ticks / 20.0) + " seconds"
                     );
                     setWorldBorder(distance, ticks);
+                }
+            }
+            return true;
+        });
+
+        getCommand("glow").setExecutor((sender, command, label, args) -> {
+            if (args.length < 1 && !(sender instanceof Player)) {
+                sender.sendMessage(ChatColor.RED + "player argument must be specified if you aren't a player");
+            } if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
+            } else {
+                Player player;
+                if (args.length > 0) {
+                    player = Bukkit.getPlayer(args[0]);
+                } else {
+                    player = (Player)sender;
+                }
+                int color = 0xffffff;
+                if (args.length > 1) {
+                    if (args[1].equals("-")) {
+                        if (args.length > 2) {
+                            Player forPlayer = Bukkit.getPlayer(args[2]);
+                            removeGlowing(player, forPlayer);
+                            sender.sendMessage("Stopped glowing " + player.getName() + " for " + forPlayer.getName());
+                        } else {
+                            removeGlowing(player);
+                            sender.sendMessage("Stopped glowing " + player.getName());
+                        }
+                        return true;
+                    }
+                    color = Integer.parseUnsignedInt(args[1], 16);
+                }
+                if (args.length > 2) {
+                    Player forPlayer = Bukkit.getPlayer(args[2]);
+                    glow(player, forPlayer, color);
+                    sender.sendMessage("Now glowing " + player.getName() + " for " + forPlayer);
+                } else {
+                    glow(player, color);
+                    sender.sendMessage("Now glowing " + player.getName());
                 }
             }
             return true;
@@ -370,6 +410,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public void glow(Player player, int color) {
+        globalGlowingEffects.put(player.getName(), color);
         packetManager.broadcastPacket("glowing", Integer.toHexString(color) + ' ' + player.getName());
     }
 
@@ -386,6 +427,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public void removeGlowing(Player player) {
+        globalGlowingEffects.remove(player.getName());
         packetManager.broadcastPacket("noglowing", player.getName());
     }
 
@@ -394,6 +436,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     public void clearGlowing() {
+        globalGlowingEffects.clear();
         packetManager.broadcastPacket("noglowing");
     }
 

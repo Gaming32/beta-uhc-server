@@ -64,11 +64,19 @@ public class UHCPlayerListener extends PlayerListener {
                     // plugin.packetManager.getDoesntHaveMod().add(event.getPlayer().getName());
                 }
             }, 60);
-            // Sync spectators
-            plugin.packetManager.sendPacket(event.getPlayer(), "reset-spectators");
+            // Sync data
             plugin.worldBorderInit(event.getPlayer());
+            plugin.packetManager.sendPacket(event.getPlayer(), "reset-spectators");
             for (String spectator : plugin.spectatingPlayers) {
                 plugin.packetManager.sendPacket(event.getPlayer(), "spectator", spectator);
+            }
+            plugin.packetManager.sendPacket(event.getPlayer(), "noglowing");
+            for (var glowingEffect : plugin.globalGlowingEffects.entrySet()) {
+                plugin.packetManager.sendPacket(
+                    event.getPlayer(),
+                    "glowing",
+                    Integer.toHexString(glowingEffect.getValue()) + ' ' + glowingEffect.getKey()
+                );
             }
         }, 20);
     }

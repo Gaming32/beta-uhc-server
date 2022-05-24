@@ -11,3 +11,6 @@ commands:
   worldborder:
     description: Sets or gets the world border
     usage: /worldborder [distance] [ticks]
+  glow:
+    description: Glows a player
+    usage: /glow [player] [color] [for-player]
