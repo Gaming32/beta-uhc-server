@@ -365,6 +365,38 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    public void glow(Player player, Player forPlayer, int color) {
+        packetManager.sendPacket(forPlayer, "glowing", Integer.toHexString(color) + ' ' + player.getName());
+    }
+
+    public void glow(Player player, int color) {
+        packetManager.broadcastPacket("glowing", Integer.toHexString(color) + ' ' + player.getName());
+    }
+
+    public void glow(Player player, Player forPlayer) {
+        glow(player, forPlayer, 0xffffff);
+    }
+
+    public void glow(Player player) {
+        glow(player, 0xffffff);
+    }
+
+    public void removeGlowing(Player player, Player forPlayer) {
+        packetManager.sendPacket(forPlayer, "noglowing", player.getName());
+    }
+
+    public void removeGlowing(Player player) {
+        packetManager.broadcastPacket("noglowing", player.getName());
+    }
+
+    public void clearGlowing(Player forPlayer) {
+        packetManager.sendPacket(forPlayer, "noglowing");
+    }
+
+    public void clearGlowing() {
+        packetManager.broadcastPacket("noglowing");
+    }
+
     public Set<String> getTeamMembers(String teamName) {
         return teamNameToMembers.get(teamName);
     }

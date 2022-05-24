@@ -36,18 +36,20 @@ public final class CustomPacketManager extends PlayerListener {
     }
 
     public void broadcastPacket(String packetType) {
-        UHCPlugin.LOGGER.info(packetType);
+        String message = "canyonuhc:" + packetType;
+        UHCPlugin.LOGGER.info(message);
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (doesntHaveMod.contains(player.getName())) continue;
-            sendPacket(player, packetType);
+            player.sendMessage(message);
         }
     }
 
     public void broadcastPacket(String packetType, String data) {
-        UHCPlugin.LOGGER.info(packetType + ' ' + data);
+        String message = "canyonuhc:" + packetType + ' ' + data;
+        UHCPlugin.LOGGER.info(message);
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (doesntHaveMod.contains(player.getName())) continue;
-            sendPacket(player, packetType, data);
+            player.sendMessage(message);
         }
     }
 
