@@ -16,6 +16,8 @@ jobs:
       - name: Install Canyon
         run: |
           cd canyon
+          chmod +x canyon
+          ./canyon p
           mvn clean install
           cd ..
       - name: Set up JDK 8
