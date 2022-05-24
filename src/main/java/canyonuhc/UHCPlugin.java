@@ -358,7 +358,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 new Gson().fromJson(reader, new TypeToken<Map<String, Set<String>>>() {}.getType())
             );
         }
-        for (Map.Entry<String, Set<String>> team : teamNameToMembers.entrySet()) {
+        for (var team : teamNameToMembers.entrySet()) {
             for (String member : team.getValue()) {
                 memberToTeamName.put(member, team.getKey());
             }
@@ -416,7 +416,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public void handOutMaps(Player player) {
         player.getInventory().clear();
-        for (Map.Entry<String, MapView> playerMap : playerFaceMaps.entrySet()) {
+        for (var playerMap : playerFaceMaps.entrySet()) {
             String playerName = playerMap.getKey();
             MapView map = playerMap.getValue();
             packetManager.sendPacket(
@@ -446,8 +446,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         if (entity == null) {
             return null;
         }
-        if (entity instanceof Player) {
-            return ((Player)entity).getName();
+        if (entity instanceof Player player) {
+            return player.getName();
         }
         String name = entity.getClass().getSimpleName();
         if (name.startsWith("Craft")) {

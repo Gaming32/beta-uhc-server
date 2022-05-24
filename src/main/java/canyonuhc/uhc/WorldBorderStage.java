@@ -58,9 +58,9 @@ public enum WorldBorderStage {
         if (size <= FINAL.endSize) {
             return END;
         }
-        for (WorldBorderStage WorldBorderStage : WorldBorderStage.values()) {
-            if (size <= WorldBorderStage.startSize && size > WorldBorderStage.endSize) {
-                return WorldBorderStage;
+        for (WorldBorderStage worldBorderStage : WorldBorderStage.values()) {
+            if (size <= worldBorderStage.startSize && size > worldBorderStage.endSize) {
+                return worldBorderStage;
             }
         }
         return null;
