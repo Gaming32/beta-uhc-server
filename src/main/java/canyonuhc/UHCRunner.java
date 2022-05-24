@@ -33,17 +33,57 @@ public final class UHCRunner {
         }
         if (currentStage == WorldBorderStage.END) {
             for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendMessage(ChatColor.GOLD +
+                    "The world border has now shrunk to its smallest size! Players will be glowed in 5 minutes."
+                );
+                player.playEffect(
+                    player.getLocation(),
+                    Effect.CLICK1,
+                    0 // data is unused for CLICK1, according to wiki.vg
+                );
                 if (!player.getWorld().getName().equals("world")) {
                     player.sendMessage(ChatColor.GOLD +
                         "The nether will close in 5 minutes."
                     );
                 }
             }
+            activeTasks.add(Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    player.sendMessage(ChatColor.GOLD +
+                        "Players are now glowed! Go find people who are hiding."
+                    );
+                    player.playEffect(
+                        player.getLocation(),
+                        Effect.CLICK1,
+                        0 // data is unused for CLICK1, according to wiki.vg
+                    );
+                    if (!plugin.spectatingPlayers.contains(player.getName())) {
+                        plugin.glow(player);
+                        if (teamGame) {
+                            String playerTeam = plugin.getTeamName(player);
+                            if (playerTeam != null) {
+                                for (Player biasedPlayer : Bukkit.getOnlinePlayers()) {
+                                    if (!plugin.spectatingPlayers.contains(biasedPlayer.getName())) {
+                                        if (playerTeam.equals(plugin.getTeamName(biasedPlayer))) {
+                                            plugin.glow(player, biasedPlayer, 0x55ff55);
+                                        } else {
+                                            plugin.glow(player, biasedPlayer, 0xff5555);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }, 5 * 60 * 20));
             activeTasks.add(Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     if (!player.getWorld().getName().equals("world")) {
+                        player.sendMessage(ChatColor.GOLD +
+                            "The nether is closed."
+                        );
                         plugin.lastDamageCauses.put(player.getName(), DamageCause.FIRE);
-                        player.setHealth(0);
+                        player.damage(20);
                     }
                 }
             }, 5 * 60 * 20, 100));

@@ -314,6 +314,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         }
         spectatingPlayers.clear();
         packetManager.broadcastPacket("reset-spectators");
+        clearGlowing();
         setWorldBorder(200);
     }
 
