@@ -53,7 +53,6 @@ public class UHCEntityListener extends EntityListener {
         UHCPlugin.broadcastMessage(plugin.getDeathMessage(player));
         if (plugin.uhcStarted) {
             plugin.killPlayer(player);
-            plugin.currentUhc.checkUhcEnd();
         }
     }
 

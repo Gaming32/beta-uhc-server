@@ -1,8 +1,10 @@
 package canyonuhc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -17,6 +19,7 @@ import canyonuhc.uhc.WorldBorderStage;
 public final class UHCRunner {
     private final UHCPlugin plugin;
     private final Set<Integer> activeTasks = new HashSet<>(1);
+    public final Map<String, Integer> playerDeathTimeouts = new HashMap<>();
     public final boolean teamGame;
 
     private WorldBorderStage currentStage = WorldBorderStage.FIRST;
@@ -120,7 +123,7 @@ public final class UHCRunner {
         }
         String winner = null;
         boolean ended = false;
-        if (plugin.currentUhc.teamGame) {
+        if (teamGame) {
             // Keep track of the teams with at least one player alive
             Set<String> aliveTeams = new HashSet<>();
             for (Player player : alive) {
@@ -253,5 +256,9 @@ public final class UHCRunner {
             Bukkit.getScheduler().cancelTask(task);
         }
         activeTasks.clear();
+        for (int task : playerDeathTimeouts.values()) {
+            Bukkit.getScheduler().cancelTask(task);
+        }
+        playerDeathTimeouts.clear();
     }
 }

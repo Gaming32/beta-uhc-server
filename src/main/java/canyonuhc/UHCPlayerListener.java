@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -53,6 +54,11 @@ public class UHCPlayerListener extends PlayerListener {
             plugin.generateFaceMap(event.getPlayer());
         }
         awaitingPingResponse.add(event.getPlayer().getName());
+        if (plugin.uhcStarted) {
+            Bukkit.getScheduler().cancelTask(
+                plugin.currentUhc.playerDeathTimeouts.remove(event.getPlayer().getName())
+            );
+        }
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             plugin.packetManager.sendPacket(event.getPlayer(), "ping");
             Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
@@ -69,6 +75,9 @@ public class UHCPlayerListener extends PlayerListener {
             plugin.packetManager.sendPacket(event.getPlayer(), "reset-spectators");
             for (String spectator : plugin.spectatingPlayers) {
                 plugin.packetManager.sendPacket(event.getPlayer(), "spectator", spectator);
+            }
+            if (plugin.spectatingPlayers.contains(event.getPlayer().getName())) {
+                plugin.initPlayerDead(event.getPlayer());
             }
             plugin.packetManager.sendPacket(event.getPlayer(), "noglowing");
             for (var glowingEffect : plugin.globalGlowingEffects.entrySet()) {
@@ -94,6 +103,20 @@ public class UHCPlayerListener extends PlayerListener {
     @Override
     public void onPlayerQuit(PlayerQuitEvent event) {
         if (plugin.uhcStarted) {
+            plugin.currentUhc.playerDeathTimeouts.put(
+                event.getPlayer().getName(),
+                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    UHCPlugin.broadcastMessage(
+                        ChatColor.YELLOW + event.getPlayer().getName() +
+                        " was considered dead because they logged out for more than 5 minutes."
+                    );
+                    plugin.lastDamageCauses.put(event.getPlayer().getName(), DamageCause.CUSTOM);
+                    event.getPlayer().setHealth(0);
+                    if (plugin.currentUhc != null) { // May be null if the game ended because of this
+                        plugin.currentUhc.playerDeathTimeouts.remove(event.getPlayer().getName());
+                    }
+                }, 5 * 60 * 20)
+            );
             plugin.currentUhc.checkUhcEnd();
         }
         plugin.packetManager.getDoesntHaveMod().remove(event.getPlayer().getName());

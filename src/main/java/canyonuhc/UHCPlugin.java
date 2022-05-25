@@ -27,7 +27,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LightningStrike;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
@@ -486,9 +485,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     public void killPlayer(Player player) {
         if (spectatingPlayers.add(player.getName())) {
             player.getWorld().strikeLightningEffect(player.getLocation());
-            player.getWorld().spawn(player.getLocation(), LightningStrike.class);
         }
         initPlayerDead(player);
+        currentUhc.checkUhcEnd();
     }
 
     public void initPlayerDead(Player player) {
