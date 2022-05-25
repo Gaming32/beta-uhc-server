@@ -146,9 +146,6 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             world.setTime(0);
             world.setWeatherDuration(0);
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.setHealth(20);
-                player.getInventory().clear();
-                player.getInventory().setArmorContents(new ItemStack[4]);
                 player.setNoDamageTicks(200);
                 String teamName;
                 if (isTeamGame && (teamName = getTeamName(player)) != null) {
@@ -307,9 +304,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             player.setDisplayName(player.getName());
             player.setSleepingIgnored(false);
             player.resetPlayerTime();
+            player.setHealth(20);
             player.getInventory().clear();
             player.getInventory().setArmorContents(new ItemStack[4]);
-            player.setHealth(20);
             player.teleport(Bukkit.getWorld("world").getSpawnLocation());
         }
         spectatingPlayers.clear();
