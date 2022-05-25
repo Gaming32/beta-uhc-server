@@ -22,6 +22,7 @@ import com.google.gson.reflect.TypeToken;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -143,13 +144,11 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             setPvp(false);
             ThreadLocalRandom rand = ThreadLocalRandom.current();
             World world = Bukkit.getWorld("world");
-            world.setTime(0);
-            world.setWeatherDuration(0);
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.setNoDamageTicks(200);
+                player.setNoDamageTicks(400);
                 String teamName;
                 if (isTeamGame && (teamName = getTeamName(player)) != null) {
-                    player.setDisplayName("[" + teamName + "] " + player.getName());
+                    setDisplayName(player, player.getName() + " " + ChatColor.GOLD + '[' + teamName + "]\u00a7r");
                     Location teamOrigin = teamOrigins.get(teamName);
                     if (teamOrigin == null) {
                         teamOrigins.put(teamName, teamOrigin = getRandomTeamPlayerLocation(world, rand));
@@ -161,6 +160,14 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                 } else {
                     player.teleport(getRandomTeamPlayerLocation(world, rand));
                 }
+            }
+            for (World serverWorld : Bukkit.getWorlds()) {
+                for (Entity entity : serverWorld.getEntities()) {
+                    if (entity instanceof org.bukkit.entity.Item) {
+                        entity.remove();
+                    }
+                }
+                serverWorld.setDifficulty(Difficulty.HARD);
             }
             uhcStarted = true;
             (currentUhc = new UHCRunner(this, isTeamGame)).beginUhc();
@@ -301,13 +308,19 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         }
         setPvp(true);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setDisplayName(player.getName());
+            setDisplayName(player, null);
             player.setSleepingIgnored(false);
             player.resetPlayerTime();
             player.setHealth(20);
             player.getInventory().clear();
             player.getInventory().setArmorContents(new ItemStack[4]);
             player.teleport(Bukkit.getWorld("world").getSpawnLocation());
+        }
+        for (World world : Bukkit.getWorlds()) {
+            world.setTime(0);
+            world.setStorm(false);
+            world.setThundering(false);
+            world.setDifficulty(Difficulty.PEACEFUL);
         }
         spectatingPlayers.clear();
         packetManager.broadcastPacket("reset-spectators");
@@ -481,7 +494,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     public void initPlayerDead(Player player) {
         if (!uhcStarted) return;
         packetManager.broadcastPacket("spectator", player.getName());
-        player.setDisplayName(player.getDisplayName() + " " + ChatColor.RED + "[DEAD]\u00a7r");
+        setDisplayName(player, player.getName() + " " + ChatColor.RED + "[DEAD]\u00a7r");
         player.setSleepingIgnored(true);
         player.setPlayerTime(0, false);
         handOutMaps(player);
@@ -509,6 +522,16 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         playerFaceMaps.put(player.getName(), map);
         faceMapIdToPlayer.put(map.getId(), player.getName());
         return map;
+    }
+
+    public void setDisplayName(Player player, String displayName) {
+        if (displayName == null || player.getName().equals(displayName)) {
+            player.setDisplayName(player.getName());
+            packetManager.broadcastPacket("displayname", player.getName());
+            return;
+        }
+        player.setDisplayName(displayName);
+        packetManager.broadcastPacket("displayname", player.getName() + ' ' + displayName);
     }
 
     @Override

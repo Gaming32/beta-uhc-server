@@ -78,6 +78,16 @@ public class UHCPlayerListener extends PlayerListener {
                     Integer.toHexString(glowingEffect.getValue()) + ' ' + glowingEffect.getKey()
                 );
             }
+            plugin.packetManager.sendPacket(event.getPlayer(), "cleardisplaynames");
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.getDisplayName().equals(player.getName())) {
+                    plugin.packetManager.sendPacket(
+                        event.getPlayer(),
+                        "displayname",
+                        player.getName() + ' ' + player.getDisplayName()
+                    );
+                }
+            }
         }, 20);
     }
 
