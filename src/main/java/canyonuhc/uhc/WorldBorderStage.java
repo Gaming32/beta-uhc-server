@@ -3,14 +3,14 @@ package canyonuhc.uhc;
 import canyonuhc.UHCPlugin;
 
 public enum WorldBorderStage {
-    FIRST(6128, 3064, 1800),
-    SECOND(3064, 1532),
-    THIRD(1532, 766, 900),
-    FOURTH(766, 383, 800),
-    FIFTH(383, 180, 700),
-    SIX(180, 50, 500),
-    FINAL(50, 20, 200),
-    END(20, 0, 0);
+    FIRST(3064, 1532, 1800),
+    SECOND(1532, 766),
+    THIRD(766, 383, 900),
+    FOURTH(383, 191, 800),
+    FIFTH(191, 90, 700),
+    SIX(90, 25, 500),
+    FINAL(25, 10, 200),
+    END(10, 0, 0);
 
     private final long startSize;
     private final long endSize;

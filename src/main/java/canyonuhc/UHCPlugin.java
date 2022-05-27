@@ -463,9 +463,12 @@ public class UHCPlugin extends JavaPlugin implements Listener {
     }
 
     private Location getRandomTeamPlayerLocation(World world, Random rand) {
-        int bound = TEST_MODE ? 1500 : 2000;
-        int x = rand.nextInt(-bound, bound + 1);
-        int z = rand.nextInt(-bound, bound + 1);
+        int x = rand.nextInt(-2000, 2001);
+        int z = rand.nextInt(-2000, 2001);
+        if (TEST_MODE) {
+            x >>= 2;
+            z >>= 2;
+        }
         world.loadChunk(x >> 4, z >> 4, true);
         return new Location(world, x, world.getHighestBlockYAt(x, z), z);
     }
