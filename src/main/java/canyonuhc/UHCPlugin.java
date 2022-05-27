@@ -93,6 +93,23 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         packetManager = new CustomPacketManager();
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_CHAT, packetManager, Event.Priority.Normal, this);
 
+        packetManager.register("teleport", (player, packetType, data) -> {
+            if (!player.isOp() && !spectatingPlayers.contains(player.getName())) {
+                player.sendMessage(ChatColor.RED + "You do not have the permissions to do that.");
+                return;
+            }
+            if (data == null) {
+                player.sendMessage(ChatColor.RED + "ERROR: null player name");
+                return;
+            }
+            Player teleportTo = Bukkit.getPlayerExact(data);
+            if (teleportTo == null) {
+                player.sendMessage(ChatColor.RED + "ERROR: Couldn't find that player");
+                return;
+            }
+            player.teleport(teleportTo);
+        });
+
         blockListener = new UHCBlockListener(this);
         entityListener = new UHCEntityListener(this);
         playerListener = new UHCPlayerListener(this);
@@ -107,6 +124,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Event.Priority.Normal, this);
         Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Event.Priority.Normal, this);
+        Bukkit.getPluginManager().registerEvent(Event.Type.PLAYER_TELEPORT, playerListener, Event.Priority.Normal, this);
 
         getCommand("reset-uhc").setExecutor((sender, command, label, args) -> {
             if (!sender.isOp()) {
@@ -214,7 +232,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         getCommand("glow").setExecutor((sender, command, label, args) -> {
             if (args.length < 1 && !(sender instanceof Player)) {
                 sender.sendMessage(ChatColor.RED + "player argument must be specified if you aren't a player");
-            } if (!sender.isOp()) {
+            } else if (!sender.isOp()) {
                 sender.sendMessage(ChatColor.RED + "Only ops may run this command");
             } else {
                 Player player;
@@ -247,6 +265,33 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                     sender.sendMessage("Now glowing " + player.getName());
                 }
             }
+            return true;
+        });
+
+        getCommand("spectator").setExecutor((sender, command, label, args) -> {
+            if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
+                return true;
+            }
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatColor.RED + "Only players may run this command");
+                return true;
+            }
+            spectatingPlayers.add(player.getName());
+            packetManager.broadcastPacket("spectator", player.getName());
+            return true;
+        });
+
+        getCommand("display-name").setExecutor((sender, command, label, args) -> {
+            if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
+                return true;
+            }
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatColor.RED + "Only players may run this command");
+                return true;
+            }
+            setDisplayName(player, args.length > 0 ? args[0] : null);
             return true;
         });
 

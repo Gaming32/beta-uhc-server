@@ -15,6 +15,7 @@ import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class UHCPlayerListener extends PlayerListener {
     private final Set<String> awaitingPingResponse = new HashSet<>();
@@ -89,7 +90,13 @@ public class UHCPlayerListener extends PlayerListener {
             }
             plugin.packetManager.sendPacket(event.getPlayer(), "cleardisplaynames");
             for (Player player : Bukkit.getOnlinePlayers()) {
-                if (!player.getDisplayName().equals(player.getName())) {
+                if (player.getDisplayName().equals(player.getName())) {
+                    plugin.packetManager.sendPacket(
+                        event.getPlayer(),
+                        "displayname",
+                        player.getName()
+                    );
+                } else {
                     plugin.packetManager.sendPacket(
                         event.getPlayer(),
                         "displayname",
@@ -120,6 +127,7 @@ public class UHCPlayerListener extends PlayerListener {
             plugin.currentUhc.checkUhcEnd();
         }
         plugin.packetManager.getDoesntHaveMod().remove(event.getPlayer().getName());
+        plugin.packetManager.broadcastPacket("removeplayer", event.getPlayer().getName());
     }
 
     @Override
@@ -133,6 +141,15 @@ public class UHCPlayerListener extends PlayerListener {
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         if (plugin.spectatingPlayers.contains(event.getPlayer().getName())) {
             event.setCancelled(true);
+        }
+    }
+
+    @Override
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (plugin.spectatingPlayers.contains(event.getPlayer().getName())) {
+            if (event.getFrom().distanceSquared(event.getTo()) < 4.0) {
+                event.setCancelled(true);
+            }
         }
     }
 }

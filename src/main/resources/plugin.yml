@@ -14,3 +14,9 @@ commands:
   glow:
     description: Glows a player
     usage: /glow [player] [color] [for-player]
+  spectator:
+    description: Puts you in spectator mode
+    usage: /spectator
+  display-name:
+    description: Puts you in spectator mode
+    usage: /display-name [name]
