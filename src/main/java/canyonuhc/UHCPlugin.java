@@ -26,6 +26,7 @@ import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -38,6 +39,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import canyonuhc.packets.CustomPacketManager;
 import canyonuhc.uhc.WorldBorderStage;
 import canyonuhc.util.MutableDouble;
+import net.minecraft.server.Packet;
+import net.minecraft.server.Packet71Weather;
 
 public class UHCPlugin extends JavaPlugin implements Listener {
     public static final boolean TEST_MODE = Boolean.getBoolean("canyonuhc.testMode");
@@ -532,7 +535,12 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public void killPlayer(Player player) {
         if (spectatingPlayers.add(player.getName())) {
-            player.getWorld().strikeLightningEffect(player.getLocation());
+            Packet lightningPacket = new Packet71Weather(((CraftPlayer)player).getHandle());
+            for (Player otherPlayer : Bukkit.getOnlinePlayers()) {
+                if (otherPlayer.getWorld() == player.getWorld()) {
+                    ((CraftPlayer)otherPlayer).getHandle().netServerHandler.sendPacket(lightningPacket);
+                }
+            }
         }
         initPlayerDead(player);
         currentUhc.checkUhcEnd();
