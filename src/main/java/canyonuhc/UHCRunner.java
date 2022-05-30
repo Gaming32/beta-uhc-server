@@ -151,7 +151,7 @@ public final class UHCRunner {
                     player.sendMessage(ChatColor.GOLD.toString() +
                         winner + " won the UHC!"
                     );
-                    player.playEffect(spawnLocation, Effect.RECORD_PLAY, 0); // 0 = win sound
+                    player.playEffect(spawnLocation, Effect.RECORD_PLAY, 1); // 1 = win sound
                 }
             } else {
                 for (Player player : Bukkit.getOnlinePlayers()) {

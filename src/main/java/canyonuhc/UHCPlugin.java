@@ -194,7 +194,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
         getCommand("worldborder").setExecutor((sender, command, label, args) -> {
             // if (sender instanceof Player) {
             //     Player player = (Player)sender;
-            //     player.playEffect(player.getLocation(), Effect.RECORD_PLAY, 0); // 0 = win sound
+            //     player.playEffect(player.getLocation(), Effect.RECORD_PLAY, 1); // 1 = win sound
             // }
             if (args.length == 0) {
                 sender.sendMessage("The current world border is from -" + worldBorderPos + " to " + worldBorderPos);
