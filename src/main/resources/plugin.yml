@@ -20,3 +20,9 @@ commands:
   display-name:
     description: Puts you in spectator mode
     usage: /display-name [name]
+  tpcoords:
+    description: Teleports you to a position
+    usage: /tpcoords [world] <x> <y> <z>
+  lightning:
+    description: Strikes fake lightning at your position
+    usage: /lightning

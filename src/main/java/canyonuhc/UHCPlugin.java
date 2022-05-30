@@ -26,7 +26,6 @@ import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -39,8 +38,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import canyonuhc.packets.CustomPacketManager;
 import canyonuhc.uhc.WorldBorderStage;
 import canyonuhc.util.MutableDouble;
-import net.minecraft.server.Packet;
-import net.minecraft.server.Packet71Weather;
 
 public class UHCPlugin extends JavaPlugin implements Listener {
     public static final boolean TEST_MODE = Boolean.getBoolean("canyonuhc.testMode");
@@ -176,9 +173,9 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                     int x = teamOrigin.getBlockX() + rand.nextInt(-10, 11);
                     int z = teamOrigin.getBlockZ() + rand.nextInt(-10, 11);
                     world.loadChunk(x >> 4, z >> 4, true);
-                    player.teleport(new Location(world, x, world.getHighestBlockYAt(x, z), z));
+                    player.teleportAsync(new Location(world, x, world.getHighestBlockYAt(x, z), z));
                 } else {
-                    player.teleport(getRandomTeamPlayerLocation(world, rand));
+                    player.teleportAsync(getRandomTeamPlayerLocation(world, rand));
                 }
             }
             for (World serverWorld : Bukkit.getWorlds()) {
@@ -298,6 +295,55 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             return true;
         });
 
+        getCommand("tpcoords").setExecutor((sender, command, label, args) -> {
+            if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
+                return true;
+            }
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatColor.RED + "Only players may run this command");
+                return true;
+            }
+            if (args.length < 3) {
+                return false;
+            }
+            World world = player.getWorld();
+            int argsOffset = 0;
+            if (args.length > 3) {
+                world = Bukkit.getWorld(args[0]);
+                if (world == null) {
+                    sender.sendMessage(ChatColor.RED + "Could not find the world '" + args[0] + "'");
+                    return true;
+                }
+                argsOffset = 1;
+            }
+            double[] coords = new double[3];
+            for (int i = 0; i < 3; i++) {
+                try {
+                    coords[i] = Double.parseDouble(args[i + argsOffset]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Not a valid number: " + args[i + argsOffset]);
+                    return true;
+                }
+            }
+            player.teleportAsync(new Location(world, coords[0], coords[1], coords[2]));
+            return true;
+        });
+
+        getCommand("lightning").setExecutor((sender, command, label, args) -> {
+            if (!sender.isOp()) {
+                sender.sendMessage(ChatColor.RED + "Only ops may run this command");
+                return true;
+            }
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatColor.RED + "Only players may run this command");
+                return true;
+            }
+            player.getWorld().strikeLightningEffect(player.getLocation());
+            packetManager.broadcastPacket("lightning");
+            return true;
+        });
+
         Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (spectatingPlayers.contains(player.getName())) {
@@ -318,7 +364,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
                     );
                     if (isInsideWorldBorder(oldPosition)) {
                         if (distanceFromBorder > 0 && distanceFromBorder < 6) {
-                            player.teleport(newPosition = oldPosition);
+                            player.teleportAsync(newPosition = oldPosition);
                         }
                     } else {
                         if (!isInsideWorldBorder(newPosition)) {
@@ -361,7 +407,7 @@ public class UHCPlugin extends JavaPlugin implements Listener {
             player.setHealth(20);
             player.getInventory().clear();
             player.getInventory().setArmorContents(new ItemStack[4]);
-            player.teleport(Bukkit.getWorld("world").getSpawnLocation());
+            player.teleportAsync(Bukkit.getWorld("world").getSpawnLocation());
         }
         for (World world : Bukkit.getWorlds()) {
             world.setTime(0);
@@ -535,12 +581,8 @@ public class UHCPlugin extends JavaPlugin implements Listener {
 
     public void killPlayer(Player player) {
         if (spectatingPlayers.add(player.getName())) {
-            Packet lightningPacket = new Packet71Weather(((CraftPlayer)player).getHandle());
-            for (Player otherPlayer : Bukkit.getOnlinePlayers()) {
-                if (otherPlayer.getWorld() == player.getWorld()) {
-                    ((CraftPlayer)otherPlayer).getHandle().netServerHandler.sendPacket(lightningPacket);
-                }
-            }
+            player.getWorld().strikeLightningEffect(player.getLocation());
+            packetManager.broadcastPacket("lightning");
         }
         initPlayerDead(player);
         currentUhc.checkUhcEnd();
